@@ -1,83 +1,184 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Mr Bilòr - Runner Game</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mr. Bilòr</title>
   <style>
-    body { margin: 0; overflow: hidden; background: #222; }
-    canvas { display: block; margin: auto; background: #4ecdc4; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #1a1a1a, #333);
+      color: #fff;
+    }
+    header {
+      text-align: center;
+      padding: 1rem;
+      background-color: rgba(0,0,0,0.5);
+    }
+    h1 {
+      font-size: 3rem;
+      color: #f39c12;
+      text-shadow: 2px 2px #000;
+    }
+    #gameCanvas {
+      background: url('https://i.imgur.com/LOdjPkb.png') repeat-x;
+      background-size: cover;
+      display: block;
+      margin: 1rem auto;
+      border: 3px solid #f39c12;
+      border-radius: 20px;
+    }
+    .shop {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .skin {
+      display: inline-block;
+      margin: 1rem;
+      padding: 1rem;
+      border: 2px solid #f39c12;
+      border-radius: 10px;
+      background-color: rgba(0, 0, 0, 0.3);
+      box-shadow: 0 0 10px #f39c12;
+    }
+    .skin img {
+      width: 80px;
+      height: 80px;
+    }
+    .skin button {
+      margin-top: 10px;
+      padding: 0.5rem 1rem;
+      background-color: #f39c12;
+      border: none;
+      color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      font-size: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="400" height="300"></canvas>
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-
-    let player = { x: 50, y: 130, w: 30, h: 30, vy: 0, gravity: 0.7, jump: -12, grounded: false };
-    let blocks = [];
+  <audio autoplay loop>
+    <source src="https://www.bensound.com/bensound-music/bensound-epic.mp3" type="audio/mp3">
+  </audio>
+  <header>
+    <h1>Mr. Bilòr</h1>
+  </header>
+  <canvas id="gameCanvas" width="800" height="400"></canvas>  <div class="shop">
+    <h2>Boutique</h2>
+    <div class="skin">
+      <img src="https://i.imgur.com/H3n8sFv.png" alt="Skin 1">
+      <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
+        <input type="hidden" name="cmd" value="_s-xclick">
+        <input type="hidden" name="hosted_button_id" value="YOUR_PAYPAL_BUTTON_ID_HERE">
+        <button type="submit">Débloquer (2$)</button>
+      </form>
+    </div>
+  </div>  <div class="overlay" id="startScreen">Appuie pour jouer !</div>  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let isPlaying = false;
     let score = 0;
+    let gravity = 0.5;
+    let jump = -10;
+    let gameSpeed = 5;
 
-    document.addEventListener("keydown", () => {
-      if (player.grounded) {
-        player.vy = player.jump;
-        player.grounded = false;
-      }
-    });
+    let player = {
+      x: 50,
+      y: 300,
+      width: 50,
+      height: 50,
+      velocityY: 0,
+      jumping: false
+    };
 
-    function addBlock() {
-      blocks.push({ x: canvas.width, y: 160, w: 20, h: 60 });
+    let blocks = [{ x: 800, y: 350, width: 50, height: 50 }];
+
+    function drawPlayer() {
+      ctx.fillStyle = '#3498db';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
     }
 
-    setInterval(addBlock, 1500);
+    function drawBlocks() {
+      ctx.fillStyle = '#e74c3c';
+      blocks.forEach(block => {
+        ctx.fillRect(block.x, block.y, block.width, block.height);
+      });
+    }
 
-    function loop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function drawScore() {
+      ctx.fillStyle = '#fff';
+      ctx.font = '20px Arial';
+      ctx.fillText('Score: ' + score, 10, 30);
+    }
 
-      // Player physics
-      player.vy += player.gravity;
-      player.y += player.vy;
-      if (player.y + player.h >= canvas.height) {
-        player.y = canvas.height - player.h;
-        player.vy = 0;
-        player.grounded = true;
+    function update() {
+      player.velocityY += gravity;
+      player.y += player.velocityY;
+      if (player.y > 350) {
+        player.y = 350;
+        player.velocityY = 0;
+        player.jumping = false;
       }
 
-      // Draw player
-      ctx.fillStyle = "#ff006e";
-      ctx.fillRect(player.x, player.y, player.w, player.h);
-
-      // Blocks
-      ctx.fillStyle = "#3a86ff";
-      for (let i = 0; i < blocks.length; i++) {
-        blocks[i].x -= 3;
-        ctx.fillRect(blocks[i].x, blocks[i].y, blocks[i].w, blocks[i].h);
-
-        // Collision
-        if (player.x < blocks[i].x + blocks[i].w &&
-            player.x + player.w > blocks[i].x &&
-            player.y < blocks[i].y + blocks[i].h &&
-            player.y + player.h > blocks[i].y) {
-          alert("Game Over! Score: " + score);
-          document.location.reload();
-        }
-
-        if (blocks[i].x + blocks[i].w < 0) {
-          blocks.splice(i, 1);
+      blocks.forEach(block => {
+        block.x -= gameSpeed;
+        if (block.x + block.width < 0) {
+          block.x = 800;
           score++;
         }
-      }
 
-      // Draw score
-      ctx.fillStyle = "#fff";
-      ctx.font = "16px Arial";
-      ctx.fillText("Score: " + score, 10, 20);
-
-      requestAnimationFrame(loop);
+        if (
+          player.x < block.x + block.width &&
+          player.x + player.width > block.x &&
+          player.y < block.y + block.height &&
+          player.y + player.height > block.y
+        ) {
+          isPlaying = false;
+          document.getElementById('startScreen').style.display = 'flex';
+          score = 0;
+          block.x = 800;
+        }
+      });
     }
 
-    loop();
-  </script>
-</body>
-Ajout du jeu Mr Bilòr
-</html>index.html
+    function gameLoop() {
+      if (!isPlaying) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPlayer();
+      drawBlocks();
+      drawScore();
+      update();
+      requestAnimationFrame(gameLoop);
+    }
+
+    canvas.addEventListener('click', () => {
+      if (!isPlaying) {
+        isPlaying = true;
+        document.getElementById('startScreen').style.display = 'none';
+        gameLoop();
+      } else if (!player.jumping) {
+        player.velocityY = jump;
+        player.jumping = true;
+      }
+    });
+  </script></body>
+</html>
