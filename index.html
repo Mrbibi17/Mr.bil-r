@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Mr Bilòr - Runner Game</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #222; }
+    canvas { display: block; margin: auto; background: #4ecdc4; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="400" height="300"></canvas>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 50, y: 130, w: 30, h: 30, vy: 0, gravity: 0.7, jump: -12, grounded: false };
+    let blocks = [];
+    let score = 0;
+
+    document.addEventListener("keydown", () => {
+      if (player.grounded) {
+        player.vy = player.jump;
+        player.grounded = false;
+      }
+    });
+
+    function addBlock() {
+      blocks.push({ x: canvas.width, y: 160, w: 20, h: 60 });
+    }
+
+    setInterval(addBlock, 1500);
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Player physics
+      player.vy += player.gravity;
+      player.y += player.vy;
+      if (player.y + player.h >= canvas.height) {
+        player.y = canvas.height - player.h;
+        player.vy = 0;
+        player.grounded = true;
+      }
+
+      // Draw player
+      ctx.fillStyle = "#ff006e";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+
+      // Blocks
+      ctx.fillStyle = "#3a86ff";
+      for (let i = 0; i < blocks.length; i++) {
+        blocks[i].x -= 3;
+        ctx.fillRect(blocks[i].x, blocks[i].y, blocks[i].w, blocks[i].h);
+
+        // Collision
+        if (player.x < blocks[i].x + blocks[i].w &&
+            player.x + player.w > blocks[i].x &&
+            player.y < blocks[i].y + blocks[i].h &&
+            player.y + player.h > blocks[i].y) {
+          alert("Game Over! Score: " + score);
+          document.location.reload();
+        }
+
+        if (blocks[i].x + blocks[i].w < 0) {
+          blocks.splice(i, 1);
+          score++;
+        }
+      }
+
+      // Draw score
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px Arial";
+      ctx.fillText("Score: " + score, 10, 20);
+
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+Ajout du jeu Mr Bilòr
+</html>index.html
